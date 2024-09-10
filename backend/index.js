@@ -9,8 +9,11 @@ require('dotenv').config();
 // Initialize express
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
 
+// CORS configuration
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://paymenti.netlify.app/frontend/'] // Add your frontend URLs here
+}));
 // Initialize Razorpay with your key and secret from environment variables
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
