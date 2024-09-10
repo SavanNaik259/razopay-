@@ -17,8 +17,8 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// Serve static files from the root directory
-app.use(express.static(path.join(__dirname, '../')));
+// Serve static files from the frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Route to create an order
 app.post('/createOrder', async (req, res) => {
@@ -67,7 +67,7 @@ app.post('/verifyPayment', async (req, res) => {
 
 // Serve the frontend index.html file
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../index.html'));
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 app.listen(3000, () => {
