@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <form id="paymentForm" onsubmit="return false;">
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="contact">Contact (Contact No.):</label>
+            <input type="tel" id="contact" name="contact" required>
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount (INR):</label>
+            <input type="number" id="amount" name="amount" min="1" max="49000" required>
+        </div>
+        <div class="form-group">
+            <button type="button" id="rzp-button1">Pay with Razorpay</button>
+        </div>
+    </form>
+
+    <script>
+        document.getElementById('rzp-button1').addEventListener('click', async function (e) {
+            e.preventDefault();
+
+            // Get the input values from the form
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const contact = document.getElementById('contact').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value.trim());
+
+            // Validate amount
+            if (amount < 1 || amount > 49000) {
+                alert('Amount must be between ₹1 and ₹49,000.');
+                return;
+            }
+
+            // Send a request to your server to create an order
+            const response = await fetch('/createOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    currency: 'INR',
+                    receipt: `receipt_${Math.random().toString(36).substr(2, 9)}`,
+                    payment_capture: 1
+                })
+            });
+
+            if (!response.ok) {
+                alert('Error creating order. Please try again.');
+                return;
+            }
+
+            const order = await response.json();
+
+            // Razorpay options
+            const options = {
+                key: 'rzp_live_wvVpmGQJPMc6KL',
+                amount: order.amount,
+                currency: order.currency,
+                name: 'Your Company Name',
+                description: 'Payment for Services',
+                order_id: order.id,
+                handler: async function (response) {
+                    // Send the response data to your server to verify
+                    const verifyRes = await fetch('/verifyPayment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            order_id: order.id,
+                            payment_id: response.razorpay_payment_id,
+                            signature: response.razorpay_signature
+                        })
+                    });
+
+                    if (!verifyRes.ok) {
+                        alert('Payment verification failed. Please try again.');
+                        return;
+                    }
+
+                    const result = await verifyRes.json();
+
+                    if (result.status === 'success') {
+                        alert(`Payment successful!\nPayment ID: ${result.payment_id}\nOrder ID: ${result.order_id}\nReceipt: ${order.receipt}`);
+                    } else {
+                        alert('Payment verification failed.');
+                    }
+                },
+                prefill: {
+                    name: name,
+                    email: email,
+                    contact: contact
+                },
+                theme: {
+                    color: '#F37254'
+                }
+            };
+
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+        });
+    </script>
+
+</body>
+</html>
